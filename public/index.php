@@ -1,8 +1,12 @@
 <?php
+require_once __DIR__ . '/../autoload.php';
 
-header('Content-Type: application/json');
+use App\Src\Core\HTTP\Request;
+use App\Src\Core\Router\CRUD;
 
-echo json_encode([
-    'message' => 'PHP API is running on port: '.getenv('APP_PORT'),
-    'php_version' => PHP_VERSION
-]);
+$req = new Request();
+$router = new CRUD();
+
+require_once __DIR__ . '/../App/Src/Core/Router/api.php';
+
+$router->dispatch($req);
