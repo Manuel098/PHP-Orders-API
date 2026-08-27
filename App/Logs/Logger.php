@@ -5,7 +5,7 @@ class Logger
 {
     private string $file;
     public function __construct() {
-        $this->file = __DIR__ . sprintf( "[%s]-error", date('Y-m-d'));
+        $this->file = __DIR__ . sprintf( "/[%s]-error.log", date('Y-m-d'));
         if (!file_exists($this->file)) {
             touch($this->file);
         }

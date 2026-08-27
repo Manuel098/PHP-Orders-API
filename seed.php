@@ -2,10 +2,8 @@
 
 require_once __DIR__ . '/autoload.php';
 
-use App\Database\Runner;
-use App\Database\Schemas\SchemaSQL as Schema;
+use App\Database\Seeders\DatabaseSeeder;
 use App\Logs\Logger;
-use App\Src\Core\DB\Connection;
 
 $maxTrys = 15;
 $try = 0;
@@ -13,11 +11,7 @@ $logger = new Logger();
 
 while ($try < $maxTrys) {
     try {
-        $connection = new Connection();
-        $dbConnection = $connection->getConnection();
-        $schema = new Schema($dbConnection, $logger);
-        $runner = new Runner($schema);
-
+        $runner = new DatabaseSeeder();
         $runner->run();
         break; 
     } catch (mysqli_sql_exception $e) {
