@@ -67,6 +67,10 @@ class SchemaSQL
 
             $query = sprintf( "SELECT %s FROM %s", $columns, $table);
             
+            if (isset($metadata['whereIn'])) {
+                $query .= sprintf( " WHERE %s IN %s", $metadata['whereIn']['key'], $metadata['whereIn']['value']);
+            }
+            
             $res = $this->connection->query($query);
             return $res->fetch_all(MYSQLI_ASSOC);
         } catch (mysqli_sql_exception $e) {
@@ -126,7 +130,6 @@ class SchemaSQL
                 return $carry;
             }, []);
 
-            echo sprintf("INSERT INTO %s (%s) VALUES %s", $table, implode(", ", $cols), implode(", ", $values));
             $query = sprintf("INSERT INTO %s (%s) VALUES %s", $table, implode(", ", $cols), implode(", ", $values));
             $this->connection->query($query);
         } catch (mysqli_sql_exception $exception) {
@@ -138,7 +141,10 @@ class SchemaSQL
         }
     }
 
-
+    // TRANSACTIONS METHODS
+    public function beginTransaction(): void { $this->connection->begin_transaction(); }
+    public function commit():           void { $this->connection->commit(); }
+    public function rollback():         void { $this->connection->rollback(); }
 
     /**
      * Delete DB table function
