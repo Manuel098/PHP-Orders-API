@@ -51,6 +51,32 @@ class SchemaSQL
     }
 
     /**
+     * Get query
+     * 
+     * In this method you can call db rows by table with metadata information
+     * - params
+     *  table <string> => Target table
+     *  metadata <array> => all select properties
+     *      - columns: <array> => column names such as ['name', 'age', ...] could be nullable
+     */
+    public function get(string $table, array $metadata): array {
+        try {
+            $columns = (isset($metadata['columns'])) 
+                ? implode(", ", $metadata['columns'])
+                : '*';
+
+            $query = sprintf( "SELECT %s FROM %s", $columns, $table);
+            
+            $res = $this->connection->query($query);
+            return $res->fetch_all(MYSQLI_ASSOC);
+        } catch (mysqli_sql_exception $e) {
+            $this->logger->error(sprintf( "Failed to get records on table '%s': \nException: %s", $table, $e->getMessage()));
+
+            throw $e;
+        }
+    }
+
+    /**
      * Insert one record on table
      * 
      * params:
@@ -61,15 +87,21 @@ class SchemaSQL
      * throws
      *  mysql sql exception => do a log message and throw error
      */
-    public function insert(string $table, array $columns): void {
+    public function insert(string $table, array $columns): array {
         try {
             $cols = array_keys($columns);
             $values = array_values($columns);
 
             $query = sprintf("INSERT INTO %s (%s) VALUES (%s)", $table, implode(", ", $cols), implode(", ", $values));
-            $this->connection->query($query);
+            
+            $res = $this->connection->query($query);
+            $id = $this->connection->insert_id;
+
+            $result = $this->connection->query( sprintf("SELECT * FROM %s WHERE id = %s", $table, $id));
+
+            return $result->fetch_assoc();
         } catch (mysqli_sql_exception $exception) {
-            $this->logger->error(sprintf( "Failed to insert on table table '%s': \nException: %s", $table, $exception->getMessage()));
+            $this->logger->error(sprintf( "Failed to insert on table '%s': \nException: %s", $table, $exception->getMessage()));
 
             throw $exception;
         }

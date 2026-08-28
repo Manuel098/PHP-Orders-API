@@ -15,4 +15,4 @@ RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 9000
 
-CMD ["sh", "-c", "mkdir -p /var/www/html/App/Logs && chown -R www-data:www-data /var/www/html/App/Logs && chmod -R 775 /var/www/html/App/Logs && php migrate.php && php seed.php && php-fpm"]
+CMD ["sh", "-c", "mkdir -p /var/www/html/App/Logs && chown -R www-data:www-data /var/www/html/App/Logs && chmod -R 777 /var/www/html/App/Logs && php migrate.php && php seed.php && php-fpm"]

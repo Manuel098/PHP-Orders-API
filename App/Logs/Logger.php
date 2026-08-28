@@ -35,4 +35,14 @@ class Logger
         ]) );
         error_log($message, 3, $this->file);
     }
+    /**
+     * Write on log file track data information
+     */
+    public function track(Request $req): void
+    {
+        $this->file = __DIR__ . sprintf( "/[%s]-tracks.log", date('Y-m-d'));
+        $this->checkFile();
+        $message = sprintf( "[%s] Timing: %s \n", $req->getId(), json_encode($req->getTrack()) );
+        error_log($message, 3, $this->file);
+    }
 }
