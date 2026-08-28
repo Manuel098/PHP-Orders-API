@@ -47,7 +47,7 @@ services:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 15
     networks:
       - api_network
   phpmyadmin:
