@@ -7,6 +7,7 @@ use App\Logs\Logger;
 use App\Src\Core\HTTP\Request;
 // DTOS
 use App\Src\Modules\Order\DTOs\CreateOrderDTO;
+use App\Src\Modules\Order\DTOs\PatchUpdateOrderDTO;
 // Throws
 use mysqli_sql_exception;
 
@@ -49,6 +50,27 @@ class OrderActions {
             throw $e;
         } finally {
             $req->track('2-StoreAction', (microtime(true) - $init));
+        }
+    }
+
+    /**
+     * Update Order ACTION
+     * 
+     */
+    public function updateOrder(Request $req, PatchUpdateOrderDTO $dto): void {
+        try {
+            $init = microtime(true);
+            $order = $dto->getOrder();
+            $this->schema->beginTransaction();
+            $this->service->updateItemsStock($req, $order['items']);
+            $this->service->updateOrder($req, $order, 'confirmed');
+            
+            $this->schema->commit();
+        } catch (mysqli_sql_exception $e) {
+            $this->schema->rollback();
+            throw $e;
+        } finally {
+            $req->track('2-updateOrderAction', (microtime(true) - $init));
         }
     }
 }

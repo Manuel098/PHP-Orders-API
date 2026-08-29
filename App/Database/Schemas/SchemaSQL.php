@@ -58,6 +58,9 @@ class SchemaSQL
      *  table <string> => Target table
      *  metadata <array> => all select properties
      *      - columns: <array> => column names such as ['name', 'age', ...] could be nullable
+     *      - whereIn: <array> => [key: string, value: string] the key is the column name and value is a wherin clause such as ( ... )
+     *      - where: <array> => array with all where clauses on string such as [ "...", "..." ]
+     *      - join: <array> => [type, table, rule] type refers to join types such as inner, left, rigth table means the right table and rule is the relationship left to right
      */
     public function get(string $table, array $metadata): array {
         try {
@@ -67,10 +70,18 @@ class SchemaSQL
 
             $query = sprintf( "SELECT %s FROM %s", $columns, $table);
             
+            if (isset($metadata['join'])) {
+                $query .= sprintf( " %s JOIN %s on %s ", $metadata['join']['type'], $metadata['join']['table'], $metadata['join']['rule']);
+            }
+
             if (isset($metadata['whereIn'])) {
                 $query .= sprintf( " WHERE %s IN %s", $metadata['whereIn']['key'], $metadata['whereIn']['value']);
             }
-            
+
+            if (isset($metadata['where'])) {
+                $query .= sprintf( " WHERE %s", implode(" AND ", $metadata['where']));
+            }
+
             $res = $this->connection->query($query);
             return $res->fetch_all(MYSQLI_ASSOC);
         } catch (mysqli_sql_exception $e) {
@@ -104,6 +115,27 @@ class SchemaSQL
             $result = $this->connection->query( sprintf("SELECT * FROM %s WHERE id = %s", $table, $id));
 
             return $result->fetch_assoc();
+        } catch (mysqli_sql_exception $exception) {
+            $this->logger->error(sprintf( "Failed to insert on table '%s': \nException: %s", $table, $exception->getMessage()));
+
+            throw $exception;
+        }
+    }
+    
+
+    public function update(string $table, array $metadata): void {
+        try {
+            $query = sprintf("UPDATE %s SET %s ", $table, $metadata['values']);
+            
+            if (isset($metadata['whereIn'])) {
+                $query .= sprintf( " WHERE %s IN %s", $metadata['whereIn']['key'], $metadata['whereIn']['value']);
+            }
+
+            if (isset($metadata['where'])) {
+                $query .= sprintf( " WHERE %s", implode(" AND ", $metadata['where']));
+            }
+
+            $this->connection->query($query);
         } catch (mysqli_sql_exception $exception) {
             $this->logger->error(sprintf( "Failed to insert on table '%s': \nException: %s", $table, $exception->getMessage()));
 

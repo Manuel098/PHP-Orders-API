@@ -57,7 +57,7 @@ class OrderService {
 
         } catch (mysqli_sql_exception $e) {
             $this->log->error(sprintf( "Failed to get rows on '%s':\nException: %s", 'orders', $e->getMessage() ));
-            throw new mysqli_sql_exception( 'Database connection failed', (int) $e->getCode() );
+            throw new mysqli_sql_exception( 'Database connection failed', 400 );
         } finally {
             $req->track( '3.1-CheckItemsService', microtime(true) - $init );
         }
@@ -81,9 +81,53 @@ class OrderService {
             return $order;
         } catch (mysqli_sql_exception $e) {
             $this->log->error(sprintf( "Failed to store rows on '%s':\nException: %s", 'orders', $e->getMessage() ));
-            throw new mysqli_sql_exception( 'Database connection failed', (int) $e->getCode() );
+            throw new mysqli_sql_exception( 'Database connection failed', 400 );
         } finally {
             $req->track( '3.2-CreateOrderService', microtime(true) - $init );
         }
     }
+
+    public function updateItemsStock(Request $req, array $items): void {
+        try {
+            $init = microtime(true);
+            
+            $values = array_reduce($items, function(string $carry, array $item) {
+                $carry .= sprintf( " WHEN %s THEN stock - %s ", $item['productId'], $item['qty']);
+                return $carry;
+            }, 'stock = CASE id ');
+            $values .= ' END';
+
+            $dbItems = $this->schema->update('products', [
+                'values' => $values,
+                'whereIn' => ['key' => 'id', 'value' => sprintf( "(%s)", implode(', ', array_column($items, 'productId')))]
+            ]);
+        } catch (mysqli_sql_exception $e) {
+            $this->log->error(sprintf( "Failed to update products on '%s' table:\nCode: %s \nException: %s", 'products', $e->getCode(), $e->getMessage() ));
+            switch ($e->getCode()) {
+                case 3819:  throw new mysqli_sql_exception( 'Sorry we are out of stock to complete the request', 400 );
+                default:    throw new mysqli_sql_exception( 'Database connection failed', 400 );
+            }
+            
+        } finally {
+            $req->track( '3.1-UpdateProductsStockService', microtime(true) - $init );
+        }   
+    }
+
+    public function updateOrder(Request $req, array $order, string $status): void {
+        try {
+            $init = microtime(true);
+
+            $dbItems = $this->schema->update('orders', [
+                'values' => sprintf('status = "%s"', $status),
+                'where' => [sprintf(' id = %s ', $order['orderId'])]
+            ]);
+        } catch (mysqli_sql_exception $e) {
+            $this->log->error(sprintf( "Failed to update order on '%s' table:\nCode: %s \nException: %s", 'products', $e->getCode(), $e->getMessage() ));
+            throw new mysqli_sql_exception( 'Database connection failed', 400 );
+        } finally {
+            $req->track( '3.2-UpdateProductStatusService', microtime(true) - $init );
+        }   
+    }
+
+
 }
