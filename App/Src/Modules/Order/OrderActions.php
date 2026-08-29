@@ -91,4 +91,19 @@ class OrderActions {
         }
     }
     
+    /**
+     * Get Order ACTION
+     * 
+     */
+    public function getOrder(Request $req, PatchUpdateOrderDTO $dto): array {
+        try {
+            $init = microtime(true);
+            return $dto->getOrder();    
+        } catch (mysqli_sql_exception $e) {
+            throw $e;
+        } finally {
+            $req->track('2-updateOrderAction', (microtime(true) - $init));
+        }
+    }
+    
 }

@@ -18,7 +18,7 @@ class PatchUpdateOrderDTO {
         $this->order = $this->formatOrder($order);
     }
 
-    public static function fromId($id): self {
+    public static function fromId($id, bool $willUpdate = true): self {
         if ( !is_integer($id) || $id < 1 ) {
             throw new InvalidArgumentException( 'orderId must be a valid id', 400 );
         }
@@ -31,7 +31,7 @@ class PatchUpdateOrderDTO {
         $schema = new Schema($dbConnection, $log);
 
         $order = $schema->get('orders o', [
-            'columns' => ['o.id as order_id, o.status as status, o.total as total, oi.product_id as productId, oi.quantity as qty'],
+            'columns' => ['o.id as order_id, o.status as status, o.total as total, oi.product_id as productId, oi.quantity as qty , oi.unit_price as price'],
             'where' => [sprintf( " o.id = %s ", $id)],
             'join' => [ 'type' => 'INNER', 'table' => 'order_items oi', 'rule' => 'oi.order_id = o.id' ] 
         ]);
@@ -39,7 +39,7 @@ class PatchUpdateOrderDTO {
         if ( count($order) < 1 ) {
             throw new InvalidArgumentException( 'Order not found', 404 );
         }
-        if ($order[0]['status'] !== 'pending') {
+        if ($willUpdate && $order[0]['status'] !== 'pending') {
             throw new InvalidArgumentException( 'Order must be pending', 400 );
         }
 
@@ -58,7 +58,11 @@ class PatchUpdateOrderDTO {
      */
     private function formatOrder(array $items): array {
         return array_reduce($items, function (array $carry, array $item) use ($items) {
-            $carry['items'][] = ['productId' => (int)$item['productId'], 'qty' => (int)$item['qty']];
+            $carry['items'][] = [
+                'productId' => (int)$item['productId'],
+                'qty' => (int)$item['qty'],
+                'price' => round($item['price'], 2)
+            ];
             return $carry;
         }, [
             'orderId' => (int)$items[0]['order_id'],

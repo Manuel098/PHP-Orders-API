@@ -77,4 +77,22 @@ class OrderController {
         }
     }
 
+    public function getOrder(Request $req): void {
+        try {
+            $init = microtime(true);
+            $orderId = $req->getParam('id');
+
+            $dto = PatchUpdateOrderDTO::fromId((int)$orderId, false);
+            $order = $this->actions->getOrder($req, $dto);
+
+            Response::json([ 'sussess' => true, 'data' => $order ], 200);
+        } catch (InvalidArgumentException | mysqli_sql_exception $e) {
+            $this->log->track($req);
+            Response::json([ 'sussess' => false, 'message' => $e->getMessage() ], $e->getCode());
+        } finally {
+            $req->track('1-StoreController', (microtime(true) - $init));
+            $this->log->track($req);
+        }
+    }
+
 }
