@@ -59,5 +59,22 @@ class OrderController {
             $this->log->track($req);
         }
     }
+    public function cancel(Request $req): void {
+        try {
+            $init = microtime(true);
+            $orderId = $req->getParam('id');
+
+            $dto = PatchUpdateOrderDTO::fromId((int)$orderId);
+            $order = $this->actions->cancelOrder($req, $dto);
+
+            Response::json([ 'sussess' => true, 'message' => 'Order canceled' ], 200);
+        } catch (InvalidArgumentException | mysqli_sql_exception $e) {
+            $this->log->track($req);
+            Response::json([ 'sussess' => false, 'message' => $e->getMessage() ], $e->getCode());
+        } finally {
+            $req->track('1-StoreController', (microtime(true) - $init));
+            $this->log->track($req);
+        }
+    }
 
 }

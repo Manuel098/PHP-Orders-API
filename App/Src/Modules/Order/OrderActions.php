@@ -73,4 +73,22 @@ class OrderActions {
             $req->track('2-updateOrderAction', (microtime(true) - $init));
         }
     }
+
+    /**
+     * Cancel Order ACTION
+     * 
+     */
+    public function cancelOrder(Request $req, PatchUpdateOrderDTO $dto): void {
+        try {
+            $init = microtime(true);
+            $order = $dto->getOrder();
+            $this->service->updateOrder($req, $order, 'cancelled');
+            
+        } catch (mysqli_sql_exception $e) {
+            throw $e;
+        } finally {
+            $req->track('2-updateOrderAction', (microtime(true) - $init));
+        }
+    }
+    
 }
