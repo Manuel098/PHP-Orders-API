@@ -7,6 +7,9 @@ use App\Logs\Logger;
 use App\Src\Core\HTTP\Request;
 // DTOS
 use App\Src\Modules\Order\DTOs\CreateOrderDTO;
+use App\Src\Modules\Order\DTOs\QueryFiltersOrdersDTO;
+// Objects
+use App\Src\Modules\Order\Objects\OrderList;
 // Throws
 use mysqli_sql_exception;
 
@@ -126,7 +129,40 @@ class OrderService {
             throw new mysqli_sql_exception( 'Database connection failed', 400 );
         } finally {
             $req->track( '3.2-UpdateProductStatusService', microtime(true) - $init );
-        }   
+        }
+    }
+
+    public function getOrdersList(Request $req, QueryFiltersOrdersDTO $dto): OrderList {
+        try {
+            $wheres = [];
+            $where = '';
+            if (!is_null($dto->status())) {
+                array_push($wheres, sprintf('status = "%s"', $dto->status()));
+            }
+            if (!is_null($dto->customerId())) {
+                array_push($wheres, sprintf('customer_id = %s', $dto->customerId()));
+            }
+            if (!empty($wheres)) {
+                $where = sprintf("WHERE %s", implode(" AND ", $wheres));
+            }
+            $init = microtime(true);
+            $table = sprintf('(SELECT * FROM orders %s ORDER BY id DESC LIMIT %s OFFSET %s) o', $where, $dto->limit(), $dto->offset());
+
+            
+
+            $orders = $this->schema->get($table, [
+                'columns' => ['o.id as order_id, o.customer_id as customer_id, o.status as status, o.total as total, oi.product_id as productId, oi.quantity as qty , oi.unit_price as price'],
+                'join' => [ 'type' => 'INNER', 'table' => 'order_items oi', 'rule' => 'oi.order_id = o.id' ],
+                'order' => [ 'by' => 'o.id', 'order' => 'DESC' ]
+            ]);
+
+            return new OrderList($orders);
+        } catch (mysqli_sql_exception $e) {
+            $this->log->error(sprintf( "Failed to get list on '%s' table:\nCode: %s \nException: %s", 'products', $e->getCode(), $e->getMessage() ));
+            throw new mysqli_sql_exception( 'Error getting your data', 400 );
+        } finally {
+            $req->track( '3.2-UpdateProductStatusService', microtime(true) - $init );
+        }
     }
 
 

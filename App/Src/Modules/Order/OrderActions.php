@@ -8,6 +8,9 @@ use App\Src\Core\HTTP\Request;
 // DTOS
 use App\Src\Modules\Order\DTOs\CreateOrderDTO;
 use App\Src\Modules\Order\DTOs\PatchUpdateOrderDTO;
+use App\Src\Modules\Order\DTOs\QueryFiltersOrdersDTO;
+// Objects
+use App\Src\Modules\Order\Objects\OrderList;
 // Throws
 use mysqli_sql_exception;
 
@@ -99,6 +102,17 @@ class OrderActions {
         try {
             $init = microtime(true);
             return $dto->getOrder();    
+        } catch (mysqli_sql_exception $e) {
+            throw $e;
+        } finally {
+            $req->track('2-updateOrderAction', (microtime(true) - $init));
+        }
+    }
+    
+    public function getOrders(Request $req, QueryFiltersOrdersDTO $dto): OrderList {
+        try {
+            $init = microtime(true);
+            return $this->service->getOrdersList($req, $dto);
         } catch (mysqli_sql_exception $e) {
             throw $e;
         } finally {

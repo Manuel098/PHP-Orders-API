@@ -7,6 +7,9 @@ use App\Logs\Logger;
 // DTOs
 use App\Src\Modules\Order\DTOs\CreateOrderDTO;
 use App\Src\Modules\Order\DTOs\PatchUpdateOrderDTO;
+use App\Src\Modules\Order\DTOs\QueryFiltersOrdersDTO;
+// Objects
+use App\Src\Modules\Order\Objects\OrderList;
 // Throws
 use InvalidArgumentException;
 use mysqli_sql_exception;
@@ -86,6 +89,22 @@ class OrderController {
             $order = $this->actions->getOrder($req, $dto);
 
             Response::json([ 'sussess' => true, 'data' => $order ], 200);
+        } catch (InvalidArgumentException | mysqli_sql_exception $e) {
+            $this->log->track($req);
+            Response::json([ 'sussess' => false, 'message' => $e->getMessage() ], $e->getCode());
+        } finally {
+            $req->track('1-StoreController', (microtime(true) - $init));
+            $this->log->track($req);
+        }
+    }
+    
+    public function getOrders(Request $req): void {
+        try {
+            $init = microtime(true);
+            $dto = QueryFiltersOrdersDTO::mount($req);
+            $order = $this->actions->getOrders($req, $dto);
+
+            Response::json([ 'sussess' => true, 'data' => $order->list() ], 200);
         } catch (InvalidArgumentException | mysqli_sql_exception $e) {
             $this->log->track($req);
             Response::json([ 'sussess' => false, 'message' => $e->getMessage() ], $e->getCode());

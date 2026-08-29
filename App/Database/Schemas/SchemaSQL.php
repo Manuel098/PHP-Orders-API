@@ -78,9 +78,15 @@ class SchemaSQL
                 $query .= sprintf( " WHERE %s IN %s", $metadata['whereIn']['key'], $metadata['whereIn']['value']);
             }
 
-            if (isset($metadata['where'])) {
+            if (isset($metadata['where']) && !empty($metadata['where'])) {
                 $query .= sprintf( " WHERE %s", implode(" AND ", $metadata['where']));
             }
+            
+            if (isset($metadata['order'])) {
+                $query .= sprintf( " ORDER BY %s %s", $metadata['order']['by'], $metadata['order']['order']);
+            }
+
+            // echo $query;
 
             $res = $this->connection->query($query);
             return $res->fetch_all(MYSQLI_ASSOC);
